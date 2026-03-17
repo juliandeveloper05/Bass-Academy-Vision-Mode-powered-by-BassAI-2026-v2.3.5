@@ -19,6 +19,10 @@ const PRECACHE_ASSETS = [
   '/offline.html',
   '/manifest.json',
   '/vite.svg',
+  '/images/artists/patitucci.png',
+  '/images/artists/wooten.png',
+  '/images/artists/flea.png',
+  '/images/artists/jaco.png',
 ];
 
 // Icon sizes to precache
