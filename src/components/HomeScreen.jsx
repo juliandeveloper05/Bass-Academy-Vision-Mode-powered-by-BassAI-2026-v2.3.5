@@ -165,6 +165,7 @@ const ARTISTS = [
  */
 const ArtistCard = memo(function ArtistCard({ artist, onClick }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const cardRef = useRef(null);
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
 
@@ -215,14 +216,20 @@ const ArtistCard = memo(function ArtistCard({ artist, onClick }) {
         aria-label={`Select ${artist.name} exercises`}
       >
         {/* Artist Image Background - Lazy loaded */}
-        <div className="absolute inset-0">
-          <img 
-            src={artist.image} 
-            alt={artist.name}
-            loading="lazy"
-            decoding="async"
-            className="artist-card-image"
-          />
+        <div
+          className="absolute inset-0"
+          style={imgError ? { background: artist.gradient } : undefined}
+        >
+          {!imgError && (
+            <img
+              src={artist.image}
+              alt={artist.name}
+              loading="lazy"
+              decoding="async"
+              className="artist-card-image"
+              onError={() => setImgError(true)}
+            />
+          )}
           <div className="artist-card-gradient" />
         </div>
 
