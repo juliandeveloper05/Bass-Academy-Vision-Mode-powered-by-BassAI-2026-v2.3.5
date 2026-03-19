@@ -225,6 +225,28 @@ class CustomExerciseManager {
     const exercises = this.loadAll();
     return exercises.find(e => e.id === exerciseId) || null;
   }
+
+  /**
+   * Get all unique tags across all exercises, sorted alphabetically
+   */
+  static getAllTags() {
+    const exercises = this.loadAll();
+    const tagSet = new Set();
+    exercises.forEach(ex => {
+      if (Array.isArray(ex.tags)) {
+        ex.tags.forEach(tag => tagSet.add(tag));
+      }
+    });
+    return Array.from(tagSet).sort();
+  }
+
+  /**
+   * Get exercises filtered by tag
+   */
+  static getByTag(tag) {
+    const exercises = this.loadAll();
+    return exercises.filter(ex => Array.isArray(ex.tags) && ex.tags.includes(tag));
+  }
 }
 
 export default CustomExerciseManager;
