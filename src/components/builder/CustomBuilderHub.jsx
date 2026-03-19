@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Play, Trash2, Copy, Download, Upload, Search, Filter, ArrowLeft } from 'lucide-react';
+import { Plus, Edit3, Play, Trash2, Copy, Download, Upload, Search, Filter, ArrowLeft, Tag, X } from 'lucide-react';
 import CustomExerciseManager from '../../services/CustomExerciseManager';
 
 /**
@@ -10,6 +10,8 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
   const [exercises, setExercises] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDifficulty, setFilterDifficulty] = useState('all');
+  const [filterTag, setFilterTag] = useState(null);
+  const [allTags, setAllTags] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load exercises on mount
@@ -21,6 +23,7 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
     setIsLoading(true);
     const data = CustomExerciseManager.loadAll();
     setExercises(data);
+    setAllTags(CustomExerciseManager.getAllTags());
     setIsLoading(false);
   };
 
@@ -52,10 +55,14 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
   };
 
   const filteredExercises = exercises.filter(ex => {
-    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (ex.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = !query ||
+      ex.name.toLowerCase().includes(query) ||
+      (ex.description || '').toLowerCase().includes(query) ||
+      (Array.isArray(ex.tags) && ex.tags.some(tag => tag.toLowerCase().includes(query)));
     const matchesDifficulty = filterDifficulty === 'all' || ex.difficulty === parseInt(filterDifficulty);
-    return matchesSearch && matchesDifficulty;
+    const matchesTag = !filterTag || (Array.isArray(ex.tags) && ex.tags.includes(filterTag));
+    return matchesSearch && matchesDifficulty && matchesTag;
   });
 
   return (
@@ -142,6 +149,38 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
             <input type="file" accept=".json,.bass" onChange={handleImport} className="hidden" />
           </label>
         </div>
+
+        {/* Tag Filter Pills */}
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="flex items-center gap-1 text-xs text-[#778DA9] py-1">
+              <Tag size={12} />
+              Tags:
+            </span>
+            {allTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  filterTag === tag
+                    ? 'bg-[#C9A554] text-[#0D1B2A]'
+                    : 'bg-white/10 text-[#C9A554] hover:bg-white/20'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {filterTag && (
+              <button
+                onClick={() => setFilterTag(null)}
+                className="flex items-center gap-1 px-3 py-1 rounded-full text-xs text-[#778DA9] hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <X size={10} />
+                Clear
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Exercise List */}
@@ -158,9 +197,9 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
             </div>
             <h3 className="text-xl font-semibold text-white mb-2">No hay ejercicios aún</h3>
             <p className="text-[#778DA9] mb-6">
-              {searchQuery ? 'No se encontraron ejercicios' : 'Crea tu primer ejercicio personalizado'}
+              {searchQuery || filterTag ? 'No se encontraron ejercicios' : 'Crea tu primer ejercicio personalizado'}
             </p>
-            {!searchQuery && (
+            {!searchQuery && !filterTag && (
               <button
                 onClick={onCreateNew}
                 className="px-6 py-3 bg-[#C9A554] text-[#0D1B2A] rounded-xl font-semibold
@@ -181,6 +220,7 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
                 onDelete={() => handleDelete(exercise.id)}
                 onDuplicate={() => handleDuplicate(exercise)}
                 onExport={() => CustomExerciseManager.export(exercise)}
+                onTagClick={(tag) => setFilterTag(filterTag === tag ? null : tag)}
               />
             ))}
           </div>
@@ -193,7 +233,7 @@ const CustomBuilderHub = ({ onSelectExercise, onCreateNew, onBack }) => {
 /**
  * Exercise Card Component
  */
-const ExerciseCard = ({ exercise, onPlay, onEdit, onDelete, onDuplicate, onExport }) => {
+const ExerciseCard = ({ exercise, onPlay, onEdit, onDelete, onDuplicate, onExport, onTagClick }) => {
   const noteCount = exercise.pattern?.notes?.length || 0;
   const notesPerBeat = exercise.pattern?.notesPerBeat || 3;
   const duration = Math.round((noteCount / notesPerBeat / (exercise.tempo || 100)) * 60);
@@ -231,9 +271,14 @@ const ExerciseCard = ({ exercise, onPlay, onEdit, onDelete, onDuplicate, onExpor
       {exercise.tags && exercise.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {exercise.tags.slice(0, 3).map((tag, i) => (
-            <span key={i} className="px-2 py-1 bg-white/10 rounded-lg text-xs text-[#C9A554]">
+            <button
+              key={i}
+              onClick={() => onTagClick && onTagClick(tag)}
+              className="px-2 py-1 bg-white/10 rounded-lg text-xs text-[#C9A554] hover:bg-[#C9A554]/20 transition-colors"
+              title={`Filter by "${tag}"`}
+            >
               {tag}
-            </span>
+            </button>
           ))}
         </div>
       )}
